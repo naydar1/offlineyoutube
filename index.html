@@ -1,0 +1,1226 @@
+<meta name='viewport' content='width=device-width, initial-scale=1'/>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0f0f0f">
+<title>Offline Video</title>
+
+<style>
+:root {
+  --bg:#0f0f0f;
+  --panel:#181818;
+  --panel2:#272727;
+  --text:#f1f1f1;
+  --muted:#aaa;
+  --border:#303030;
+  --red:#ff0033;
+}
+* { box-sizing:border-box; }
+body {
+  margin:0;
+  background:var(--bg);
+  color:var(--text);
+  font-family:Arial,Helvetica,sans-serif;
+  padding-bottom:calc(76px + env(safe-area-inset-bottom));
+}
+button,input { font:inherit; }
+button { cursor:pointer; }
+button:active { opacity:.75; }
+
+header {
+  position:sticky;
+  top:0;
+  z-index:5;
+  background:#0f0f0ff5;
+  backdrop-filter:blur(14px);
+  padding:12px 15px 10px;
+}
+.topline {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+}
+.brand {
+  display:flex;
+  align-items:center;
+  gap:7px;
+  font-size:20px;
+  font-weight:800;
+  white-space:nowrap;
+  letter-spacing:-.5px;
+}
+.brand-icon {
+  display:grid;
+  place-items:center;
+  width:30px;
+  height:22px;
+  border-radius:7px;
+  background:var(--red);
+  color:white;
+  font-size:14px;
+}
+.searchbox {
+  display:flex;
+  flex:1;
+  min-width:0;
+  max-width:600px;
+  margin-left:auto;
+}
+.searchbox input {
+  min-width:0;
+  width:100%;
+  padding:10px 13px;
+  color:white;
+  background:#121212;
+  border:1px solid #383838;
+  border-radius:22px 0 0 22px;
+  outline:none;
+}
+.searchbox button {
+  padding:0 15px;
+  color:white;
+  background:#282828;
+  border:1px solid #383838;
+  border-left:0;
+  border-radius:0 22px 22px 0;
+}
+.chips {
+  display:flex;
+  gap:8px;
+  overflow-x:auto;
+  scrollbar-width:none;
+  padding-top:13px;
+}
+.chips::-webkit-scrollbar { display:none; }
+.chip {
+  flex-shrink:0;
+  padding:8px 13px;
+  color:#eee;
+  background:#272727;
+  border:0;
+  border-radius:8px;
+  font-size:13px;
+}
+.chip.active {
+  background:#f1f1f1;
+  color:#111;
+  font-weight:700;
+}
+
+main {
+  max-width:1700px;
+  margin:auto;
+  padding:15px 15px 24px;
+}
+.section-heading {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  margin:7px 0 16px;
+}
+.section-heading h2 { margin:0; font-size:19px; }
+#count { color:var(--muted); font-size:12px; }
+
+.video-grid {
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:25px 12px;
+}
+.video-card { min-width:0; }
+.thumbnail-button {
+  position:relative;
+  display:block;
+  width:100%;
+  padding:0;
+  border:0;
+  border-radius:11px;
+  overflow:hidden;
+  background:#252525;
+  color:white;
+}
+.thumbnail {
+  display:grid;
+  place-items:center;
+  width:100%;
+  aspect-ratio:16/9;
+  background:linear-gradient(135deg,#303030,#151515);
+  overflow:hidden;
+  color:#bbb;
+  font-size:29px;
+}
+.thumbnail img,
+.suggestion-thumb img {
+  display:block;
+  width:100%;
+  height:100%;
+  object-fit:cover;
+}
+.duration {
+  position:absolute;
+  right:6px;
+  bottom:6px;
+  padding:3px 5px;
+  border-radius:4px;
+  background:#000c;
+  color:white;
+  font-size:11px;
+}
+.video-info {
+  display:grid;
+  grid-template-columns:35px minmax(0,1fr) 28px;
+  gap:8px;
+  padding-top:10px;
+  align-items:start;
+}
+.avatar {
+  display:grid;
+  place-items:center;
+  width:34px;
+  height:34px;
+  border-radius:50%;
+  background:#333;
+  font-weight:bold;
+}
+.video-text { min-width:0; }
+.video-title {
+  font-size:14px;
+  font-weight:700;
+  line-height:1.4;
+  overflow-wrap:anywhere;
+  display:-webkit-box;
+  -webkit-line-clamp:2;
+  -webkit-box-orient:vertical;
+  overflow:hidden;
+}
+.video-meta {
+  color:var(--muted);
+  font-size:11px;
+  line-height:1.6;
+  margin-top:5px;
+  overflow-wrap:anywhere;
+}
+.favorite-mark {
+  color:#ffd45a;
+  margin-right:4px;
+}
+
+/* Three-dot menu */
+.menu-wrap {
+  position:relative;
+  display:flex;
+  justify-content:flex-end;
+}
+.dots-button {
+  display:grid;
+  place-items:center;
+  width:30px;
+  height:34px;
+  padding:0;
+  border:0;
+  border-radius:50%;
+  background:transparent;
+  color:#ddd;
+  font-size:23px;
+  line-height:1;
+}
+.dots-button:hover { background:#292929; }
+.dropdown {
+  position:absolute;
+  top:34px;
+  right:0;
+  z-index:8;
+  display:none;
+  width:205px;
+  padding:6px;
+  background:#292929;
+  border:1px solid #414141;
+  border-radius:12px;
+  box-shadow:0 8px 28px #0009;
+}
+.dropdown.open { display:block; }
+.dropdown button {
+  display:flex;
+  align-items:center;
+  gap:12px;
+  width:100%;
+  padding:12px 10px;
+  border:0;
+  border-radius:7px;
+  color:#f1f1f1;
+  background:transparent;
+  text-align:left;
+  font-size:13px;
+}
+.dropdown button:hover { background:#3a3a3a; }
+.dropdown .delete-option { color:#ff9999; }
+.dropdown .menu-separator {
+  height:1px;
+  background:#454545;
+  margin:5px 3px;
+}
+
+.empty {
+  grid-column:1/-1;
+  text-align:center;
+  color:var(--muted);
+  padding:55px 15px;
+  line-height:1.7;
+}
+.empty-icon { font-size:42px; margin-bottom:12px; }
+.primary-button {
+  padding:11px 17px;
+  margin-top:15px;
+  color:#111;
+  background:white;
+  border:0;
+  border-radius:22px;
+  font-weight:700;
+}
+.notice {
+  padding:22px 0;
+  color:var(--muted);
+  font-size:12px;
+  line-height:1.6;
+}
+
+/* Bottom navigation */
+.bottom-nav {
+  position:fixed;
+  z-index:10;
+  left:0;
+  right:0;
+  bottom:0;
+  display:flex;
+  justify-content:center;
+  padding:6px 12px calc(6px + env(safe-area-inset-bottom));
+  background:#0f0f0ff5;
+  border-top:1px solid #242424;
+  backdrop-filter:blur(15px);
+}
+.nav-button {
+  display:flex;
+  flex:1;
+  flex-direction:column;
+  align-items:center;
+  gap:4px;
+  max-width:240px;
+  padding:5px;
+  color:#aaa;
+  background:transparent;
+  border:0;
+  border-radius:10px;
+  font-size:11px;
+}
+.nav-button .nav-icon { font-size:22px; }
+.nav-button.active { color:white; }
+
+/* Video player */
+#player {
+  display:none;
+  position:fixed;
+  inset:0;
+  z-index:20;
+  overflow-y:auto;
+  background:var(--bg);
+  padding:10px 12px calc(20px + env(safe-area-inset-bottom));
+}
+.player-header {
+  display:flex;
+  align-items:center;
+  gap:12px;
+  max-width:1600px;
+  margin:0 auto 12px;
+}
+.back-button {
+  padding:9px;
+  color:white;
+  background:transparent;
+  white-space:nowrap;
+}
+.player-layout {
+  display:grid;
+  grid-template-columns:minmax(0,1fr);
+  gap:22px;
+  max-width:1600px;
+  margin:auto;
+}
+.player-main { min-width:0; }
+#mainVideo {
+  display:block;
+  width:100%;
+  max-height:72vh;
+  aspect-ratio:16/9;
+  background:black;
+  border-radius:10px;
+}
+#playingTitle {
+  margin:14px 0 10px;
+  font-size:18px;
+  font-weight:750;
+  line-height:1.4;
+  overflow-wrap:anywhere;
+}
+.player-details {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  flex-wrap:wrap;
+  gap:12px;
+  padding-bottom:14px;
+  border-bottom:1px solid var(--border);
+}
+.owner {
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+.owner-text { font-size:13px; font-weight:700; }
+.owner-text small {
+  display:block;
+  margin-top:4px;
+  color:var(--muted);
+  font-weight:400;
+}
+.player-actions { display:flex; gap:8px; }
+.action-pill {
+  padding:10px 13px;
+  color:white;
+  background:#272727;
+  border-radius:22px;
+  font-size:12px;
+}
+.description {
+  margin-top:14px;
+  padding:13px;
+  color:#ddd;
+  background:#202020;
+  border-radius:12px;
+  font-size:13px;
+  line-height:1.6;
+}
+.suggestions-title {
+  margin:0 0 13px;
+  font-size:17px;
+  font-weight:750;
+}
+.suggestion-list {
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+}
+.suggestion {
+  display:grid;
+  grid-template-columns:42% minmax(0,1fr);
+  align-items:start;
+  gap:10px;
+  width:100%;
+  padding:0;
+  border:0;
+  color:white;
+  background:transparent;
+  text-align:left;
+}
+.suggestion-thumb {
+  position:relative;
+  display:grid;
+  place-items:center;
+  aspect-ratio:16/9;
+  overflow:hidden;
+  border-radius:9px;
+  background:linear-gradient(135deg,#333,#151515);
+  color:#bbb;
+  font-size:23px;
+}
+.suggestion-text { min-width:0; }
+.suggestion-name {
+  font-size:13px;
+  font-weight:700;
+  line-height:1.4;
+  overflow-wrap:anywhere;
+}
+.suggestion-meta {
+  margin-top:6px;
+  color:var(--muted);
+  font-size:11px;
+  line-height:1.5;
+}
+
+@media(min-width:650px) {
+  .video-grid { grid-template-columns:repeat(3,minmax(0,1fr)); }
+  main { padding-left:22px; padding-right:22px; }
+}
+@media(min-width:950px) {
+  .video-grid { grid-template-columns:repeat(4,minmax(0,1fr)); }
+  #player { padding:18px 24px; }
+  .player-layout {
+    grid-template-columns:minmax(0,2fr) minmax(300px,.9fr);
+    align-items:start;
+  }
+  .suggestion { grid-template-columns:145px minmax(0,1fr); }
+  #mainVideo { max-height:calc(100vh - 230px); }
+}
+@media(max-width:430px) {
+  header { padding:11px 12px 9px; }
+  .brand { font-size:18px; }
+  main { padding:12px 11px; }
+  .video-grid { gap:22px 10px; }
+  .video-info { grid-template-columns:31px minmax(0,1fr) 25px; gap:7px; }
+  .avatar { width:30px; height:30px; }
+  .video-title { font-size:13px; }
+  .video-meta { font-size:10px; }
+  .player-actions { width:100%; }
+  .action-pill { flex:1; }
+}
+@media(max-width:340px) {
+  .brand { font-size:16px; }
+  .video-grid { grid-template-columns:1fr; }
+}
+</style>
+</head>
+
+<body>
+
+<header>
+  <div class="topline">
+    <div class="brand">
+      <span class="brand-icon">▶</span>
+      <span>Offline Video</span>
+    </div>
+    <form class="searchbox" id="searchForm">
+      <input id="search" type="search" placeholder="Search videos" autocomplete="off">
+      <button type="submit" aria-label="Search">⌕</button>
+    </form>
+  </div>
+
+  <div class="chips" id="chips">
+    <button class="chip active" data-filter="all">All</button>
+    <button class="chip" data-filter="recent">Recently added</button>
+    <button class="chip" data-filter="favorites">★ Favorites</button>
+    <button class="chip" data-filter="large">Large files</button>
+    <button class="chip" data-filter="az">A–Z</button>
+  </div>
+</header>
+
+<main id="homePage">
+  <div class="section-heading">
+    <h2 id="sectionTitle">Recommended</h2>
+    <span id="count">Loading...</span>
+  </div>
+  <div class="video-grid" id="videoGrid"></div>
+  <div class="notice">
+    Your personal video library. Videos are stored locally in this browser.
+    This app does not download videos from YouTube.
+  </div>
+</main>
+
+<input id="picker" type="file"
+  accept="video/*,.mp4,.mov,.m4v,.webm,.mkv,.avi,.ogv,.3gp"
+  multiple hidden>
+
+<div id="player">
+  <div class="player-header">
+    <button class="back-button" id="closePlayer">← Back</button>
+    <div class="brand">
+      <span class="brand-icon">▶</span>
+      <span>Offline Video</span>
+    </div>
+  </div>
+
+  <div class="player-layout">
+    <section class="player-main">
+      <video id="mainVideo" controls playsinline preload="metadata"></video>
+      <div id="playingTitle"></div>
+      <div class="player-details">
+        <div class="owner">
+          <div class="avatar">▶</div>
+          <div class="owner-text">
+            Your library
+            <small id="playingMeta">Local video</small>
+          </div>
+        </div>
+        <div class="player-actions">
+          <button class="action-pill" id="favoritePlaying">☆ Favorite</button>
+          <button class="action-pill" id="copyTitle">Copy title</button>
+          <button class="action-pill" id="deletePlaying">Delete</button>
+        </div>
+      </div>
+      <div class="description" id="description">
+        Playing from your local video library.
+      </div>
+    </section>
+
+    <aside>
+      <div class="suggestions-title">Up next</div>
+      <div class="suggestion-list" id="suggestionList"></div>
+    </aside>
+  </div>
+</div>
+
+<nav class="bottom-nav">
+  <button id="homeNav" class="nav-button active">
+    <span class="nav-icon">⌂</span>
+    <span>Home</span>
+  </button>
+  <button id="importNav" class="nav-button">
+    <span class="nav-icon">⊕</span>
+    <span>Import</span>
+  </button>
+</nav>
+
+<script>
+(() => {
+  "use strict";
+
+  const $ = id => document.getElementById(id);
+  const DB_NAME = "offline-video-library-v1";
+  const STORE_NAME = "videos";
+  const DB_VERSION = 1;
+
+  let db = null;
+  let videos = [];
+  let currentVideo = null;
+  let currentUrl = null;
+  let filter = "all";
+  const thumbnailAttempts = new Set();
+
+  function openDB() {
+    return new Promise((resolve, reject) => {
+      const request = indexedDB.open(DB_NAME, DB_VERSION);
+
+      request.onupgradeneeded = () => {
+        const database = request.result;
+        if (!database.objectStoreNames.contains(STORE_NAME)) {
+          const store = database.createObjectStore(STORE_NAME, {
+            keyPath: "id",
+            autoIncrement: true
+          });
+          store.createIndex("added", "added", { unique: false });
+          store.createIndex("name", "name", { unique: false });
+        }
+      };
+
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+  }
+
+  function getAll() {
+    return new Promise((resolve, reject) => {
+      const request = db.transaction(STORE_NAME, "readonly")
+        .objectStore(STORE_NAME).getAll();
+      request.onsuccess = () => resolve(request.result || []);
+      request.onerror = () => reject(request.error);
+    });
+  }
+
+  function addOne(item) {
+    return new Promise((resolve, reject) => {
+      const request = db.transaction(STORE_NAME, "readwrite")
+        .objectStore(STORE_NAME).add(item);
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+  }
+
+  function putOne(item) {
+    return new Promise((resolve, reject) => {
+      const request = db.transaction(STORE_NAME, "readwrite")
+        .objectStore(STORE_NAME).put(item);
+      request.onsuccess = () => resolve();
+      request.onerror = () => reject(request.error);
+    });
+  }
+
+  function deleteOne(id) {
+    return new Promise((resolve, reject) => {
+      const request = db.transaction(STORE_NAME, "readwrite")
+        .objectStore(STORE_NAME).delete(id);
+      request.onsuccess = () => resolve();
+      request.onerror = () => reject(request.error);
+    });
+  }
+
+  function sizeText(bytes) {
+    if (!Number.isFinite(bytes)) return "";
+    const units = ["B", "KB", "MB", "GB", "TB"];
+    let size = bytes, index = 0;
+    while (size >= 1024 && index < units.length - 1) {
+      size /= 1024;
+      index++;
+    }
+    return size.toFixed(index ? 1 : 0) + " " + units[index];
+  }
+
+  function dateText(time) {
+    return new Date(time || Date.now()).toLocaleDateString();
+  }
+
+  function cleanTitle(name) {
+    return String(name || "Untitled video").replace(/\.[^.]+$/, "");
+  }
+
+  function durationText(seconds) {
+    if (!Number.isFinite(seconds) || seconds < 0) return "";
+    const h = Math.floor(seconds / 3600);
+    const m = Math.floor((seconds % 3600) / 60);
+    const s = Math.floor(seconds % 60);
+    return h
+      ? `${h}:${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}`
+      : `${m}:${String(s).padStart(2,"0")}`;
+  }
+
+  function currentList() {
+    const query = $("search").value.trim().toLowerCase();
+    let list = videos.filter(video =>
+      String(video.name || "").toLowerCase().includes(query)
+    );
+
+    if (filter === "favorites") {
+      list = list.filter(video => video.favorite === true);
+    }
+
+    if (filter === "large") {
+      list.sort((a,b) => (b.size || 0) - (a.size || 0));
+    } else if (filter === "az") {
+      list.sort((a,b) =>
+        String(a.name || "").localeCompare(String(b.name || ""))
+      );
+    } else {
+      list.sort((a,b) => (b.added || 0) - (a.added || 0));
+    }
+    return list;
+  }
+
+  function makeThumbnail(video, className) {
+    const box = document.createElement("div");
+    box.className = className;
+
+    if (video.thumbnail) {
+      const image = document.createElement("img");
+      image.src = video.thumbnail;
+      image.alt = "";
+      box.appendChild(image);
+    } else {
+      box.textContent = "▶";
+    }
+
+    if (video.duration) {
+      const duration = document.createElement("span");
+      duration.className = "duration";
+      duration.textContent = durationText(video.duration);
+      box.appendChild(duration);
+    }
+    return box;
+  }
+
+  // Save a small JPEG preview inside the same IndexedDB video record.
+  // If a browser cannot decode the format, the normal fallback remains visible.
+  function generateThumbnail(video) {
+    if (!video.blob || video.thumbnail || thumbnailAttempts.has(video.id)) return;
+    thumbnailAttempts.add(video.id);
+
+    let objectUrl = null;
+    let finished = false;
+    const probe = document.createElement("video");
+    probe.muted = true;
+    probe.playsInline = true;
+    probe.preload = "auto";
+
+    function finish(dataUrl, duration) {
+      if (finished) return;
+      finished = true;
+
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+      probe.removeAttribute("src");
+      probe.load();
+
+      if (!dataUrl) return;
+
+      const latest = videos.find(v => v.id === video.id);
+      if (!latest) return;
+
+      latest.thumbnail = dataUrl;
+      if (duration && Number.isFinite(duration)) {
+        latest.duration = duration;
+      }
+
+      putOne(latest)
+        .then(() => render())
+        .catch(error => console.warn("Could not save thumbnail", error));
+    }
+
+    probe.addEventListener("loadedmetadata", () => {
+      const duration = probe.duration;
+      if (Number.isFinite(duration) && duration > 1) {
+        try {
+          probe.currentTime = Math.min(1, duration / 4);
+        } catch (_) {
+          finish("", duration);
+        }
+      } else {
+        try {
+          capture();
+        } catch (_) {
+          finish("", duration);
+        }
+      }
+    }, { once:true });
+
+    function capture() {
+      try {
+        const width = probe.videoWidth;
+        const height = probe.videoHeight;
+        if (!width || !height) {
+          finish("", probe.duration);
+          return;
+        }
+
+        const canvas = document.createElement("canvas");
+        canvas.width = 320;
+        canvas.height = Math.max(1, Math.round(320 * height / width));
+        const context = canvas.getContext("2d");
+        context.drawImage(probe, 0, 0, canvas.width, canvas.height);
+        finish(canvas.toDataURL("image/jpeg", 0.65), probe.duration);
+      } catch (_) {
+        finish("", probe.duration);
+      }
+    }
+
+    probe.addEventListener("seeked", capture, { once:true });
+    probe.addEventListener("error", () => finish("", 0), { once:true });
+
+    objectUrl = URL.createObjectURL(video.blob);
+    probe.src = objectUrl;
+    probe.load();
+
+    setTimeout(() => finish("", 0), 12000);
+  }
+
+  function render() {
+    const grid = $("videoGrid");
+    grid.innerHTML = "";
+    const list = currentList();
+
+    $("count").textContent =
+      `${list.length} video${list.length === 1 ? "" : "s"}`;
+
+    $("sectionTitle").textContent =
+      filter === "favorites" ? "Your Favorites" :
+      filter === "recent" ? "Recently added" :
+      filter === "large" ? "Large files" :
+      filter === "az" ? "Videos A–Z" : "Recommended";
+
+    if (!list.length) {
+      const empty = document.createElement("div");
+      empty.className = "empty";
+
+      const icon = document.createElement("div");
+      icon.className = "empty-icon";
+      icon.textContent = filter === "favorites" ? "☆" : "▶";
+
+      const message = document.createElement("div");
+      message.textContent = videos.length
+        ? filter === "favorites"
+          ? "You haven't added any favorites yet. Tap ⋮ on a video to save it."
+          : "No videos match your search."
+        : "Your library is empty. Import videos to get started.";
+
+      empty.append(icon, message);
+
+      if (!videos.length) {
+        const button = document.createElement("button");
+        button.className = "primary-button";
+        button.textContent = "＋ Import videos";
+        button.addEventListener("click", chooseFiles);
+        empty.appendChild(button);
+      }
+
+      grid.appendChild(empty);
+      return;
+    }
+
+    for (const video of list) {
+      const card = document.createElement("article");
+      card.className = "video-card";
+
+      const playButton = document.createElement("button");
+      playButton.className = "thumbnail-button";
+      playButton.setAttribute("aria-label", "Play " + video.name);
+      playButton.appendChild(makeThumbnail(video, "thumbnail"));
+      playButton.addEventListener("click", () => openVideo(video));
+
+      const info = document.createElement("div");
+      info.className = "video-info";
+
+      const avatar = document.createElement("div");
+      avatar.className = "avatar";
+      avatar.textContent = "▶";
+
+      const text = document.createElement("div");
+      text.className = "video-text";
+
+      const title = document.createElement("div");
+      title.className = "video-title";
+
+      if (video.favorite) {
+        const star = document.createElement("span");
+        star.className = "favorite-mark";
+        star.textContent = "★";
+        title.appendChild(star);
+      }
+
+      title.appendChild(document.createTextNode(cleanTitle(video.name)));
+
+      const meta = document.createElement("div");
+      meta.className = "video-meta";
+      meta.textContent =
+        `Your library · ${sizeText(video.size)} · ${dateText(video.added)}`;
+
+      text.append(title, meta);
+
+      const menuWrap = document.createElement("div");
+      menuWrap.className = "menu-wrap";
+
+      const dots = document.createElement("button");
+      dots.className = "dots-button";
+      dots.textContent = "⋮";
+      dots.setAttribute("aria-label", "Video options");
+      dots.setAttribute("aria-expanded", "false");
+
+      const menu = document.createElement("div");
+      menu.className = "dropdown";
+
+      function addMenuItem(label, symbol, action, extraClass = "") {
+        const button = document.createElement("button");
+        button.className = extraClass;
+        const icon = document.createElement("span");
+        icon.textContent = symbol;
+        icon.style.width = "18px";
+        const caption = document.createElement("span");
+        caption.textContent = label;
+        button.append(icon, caption);
+
+        button.addEventListener("click", async event => {
+          event.stopPropagation();
+          closeAllMenus();
+          await action();
+        });
+
+        menu.appendChild(button);
+      }
+
+      addMenuItem("Play video", "▶", () => openVideo(video));
+
+      addMenuItem(
+        video.favorite ? "Remove from favorites" : "Save to favorites",
+        video.favorite ? "★" : "☆",
+        async () => {
+          video.favorite = !video.favorite;
+          try {
+            await putOne(video);
+            await refresh();
+          } catch (error) {
+            console.error(error);
+            alert("Could not save your favorite.");
+          }
+        }
+      );
+
+      addMenuItem("Copy title", "▣", async () => {
+        try {
+          await navigator.clipboard.writeText(video.name);
+          alert("Video title copied.");
+        } catch (_) {
+          prompt("Copy this video title:", video.name);
+        }
+      });
+
+      addMenuItem("Video details", "ⓘ", () => {
+        alert(
+          "Title: " + video.name +
+          "\nSize: " + sizeText(video.size) +
+          "\nAdded: " + dateText(video.added) +
+          "\nFavorite: " + (video.favorite ? "Yes" : "No")
+        );
+      });
+
+      const separator = document.createElement("div");
+      separator.className = "menu-separator";
+      menu.appendChild(separator);
+
+      addMenuItem("Delete video", "▤", async () => {
+        if (!confirm(`Delete "${video.name}" from your library?`)) return;
+        try {
+          if (currentVideo && currentVideo.id === video.id) closePlayer();
+          await deleteOne(video.id);
+          thumbnailAttempts.delete(video.id);
+          await refresh();
+        } catch (error) {
+          console.error(error);
+          alert("Could not delete this video.");
+        }
+      }, "delete-option");
+
+      dots.addEventListener("click", event => {
+        event.stopPropagation();
+        const willOpen = !menu.classList.contains("open");
+        closeAllMenus();
+        if (willOpen) {
+          menu.classList.add("open");
+          dots.setAttribute("aria-expanded", "true");
+        }
+      });
+
+      menuWrap.append(dots, menu);
+      info.append(avatar, text, menuWrap);
+      card.append(playButton, info);
+      grid.appendChild(card);
+    }
+  }
+
+  function closeAllMenus() {
+    document.querySelectorAll(".dropdown.open").forEach(menu => {
+      menu.classList.remove("open");
+    });
+    document.querySelectorAll(".dots-button[aria-expanded='true']").forEach(button => {
+      button.setAttribute("aria-expanded", "false");
+    });
+  }
+
+  document.addEventListener("click", closeAllMenus);
+
+  function renderSuggestions(activeId) {
+    const list = $("suggestionList");
+    list.innerHTML = "";
+
+    const suggestions = videos
+      .filter(video => video.id !== activeId)
+      .sort((a,b) => (b.added || 0) - (a.added || 0));
+
+    if (!suggestions.length) {
+      const empty = document.createElement("div");
+      empty.className = "description";
+      empty.textContent = "Import more videos to see suggestions here.";
+      list.appendChild(empty);
+      return;
+    }
+
+    for (const video of suggestions) {
+      const button = document.createElement("button");
+      button.className = "suggestion";
+      button.appendChild(makeThumbnail(video, "suggestion-thumb"));
+
+      const text = document.createElement("div");
+      text.className = "suggestion-text";
+
+      const title = document.createElement("div");
+      title.className = "suggestion-name";
+      title.textContent = cleanTitle(video.name);
+
+      const meta = document.createElement("div");
+      meta.className = "suggestion-meta";
+      meta.textContent =
+        `Your library · ${sizeText(video.size)} · ${dateText(video.added)}`;
+
+      text.append(title, meta);
+      button.appendChild(text);
+      button.addEventListener("click", () => openVideo(video));
+      list.appendChild(button);
+    }
+  }
+
+  function openVideo(video) {
+    if (!video || !video.blob) {
+      alert("This video file is not available.");
+      return;
+    }
+
+    if (currentUrl) URL.revokeObjectURL(currentUrl);
+
+    currentVideo = video;
+    currentUrl = URL.createObjectURL(video.blob);
+
+    $("mainVideo").src = currentUrl;
+    $("playingTitle").textContent = cleanTitle(video.name);
+    $("playingMeta").textContent =
+      `${sizeText(video.size)} · ${dateText(video.added)}`;
+    $("favoritePlaying").textContent =
+      video.favorite ? "★ Favorited" : "☆ Favorite";
+    $("description").textContent =
+      "This video is stored in your local library on this device.";
+    $("player").style.display = "block";
+
+    renderSuggestions(video.id);
+    $("mainVideo").play().catch(() => {});
+  }
+
+  function closePlayer() {
+    $("mainVideo").pause();
+    $("mainVideo").removeAttribute("src");
+    $("mainVideo").load();
+    $("player").style.display = "none";
+
+    if (currentUrl) {
+      URL.revokeObjectURL(currentUrl);
+      currentUrl = null;
+    }
+    currentVideo = null;
+  }
+
+  async function chooseFiles() {
+    $("picker").click();
+  }
+
+  async function importFiles(event) {
+    const files = Array.from(event.target.files || []);
+    event.target.value = "";
+    if (!files.length) return;
+
+    let imported = 0;
+    let failed = 0;
+
+    for (const file of files) {
+      const valid = file.type.startsWith("video/") ||
+        /\.(mp4|mov|m4v|webm|mkv|avi|ogv|3gp)$/i.test(file.name);
+
+      if (!valid) continue;
+
+      try {
+        await addOne({
+          name: file.name,
+          size: file.size,
+          type: file.type || "video/mp4",
+          blob: file,
+          added: Date.now(),
+          favorite: false,
+          thumbnail: ""
+        });
+        imported++;
+      } catch (error) {
+        console.error(error);
+        failed++;
+      }
+    }
+
+    $("homeNav").classList.add("active");
+    $("importNav").classList.remove("active");
+    await refresh();
+
+    if (failed) {
+      alert(`${imported} imported. ${failed} could not be saved. Check your available browser storage.`);
+    } else if (!imported) {
+      alert("No supported video files were selected.");
+    }
+  }
+
+  async function refresh() {
+    videos = await getAll();
+    render();
+
+    // Generate thumbnails for both new videos and older videos without previews.
+    for (const video of videos) {
+      if (video.blob && !video.thumbnail) generateThumbnail(video);
+    }
+
+    // Refresh suggestions if the player is open.
+    if (currentVideo) renderSuggestions(currentVideo.id);
+  }
+
+  $("picker").addEventListener("change", importFiles);
+  $("importNav").addEventListener("click", chooseFiles);
+
+  $("homeNav").addEventListener("click", () => {
+    closePlayer();
+    $("homeNav").classList.add("active");
+    $("importNav").classList.remove("active");
+    window.scrollTo({top:0, behavior:"smooth"});
+  });
+
+  $("closePlayer").addEventListener("click", closePlayer);
+
+  $("searchForm").addEventListener("submit", event => {
+    event.preventDefault();
+    render();
+  });
+
+  $("search").addEventListener("input", render);
+
+  $("chips").addEventListener("click", event => {
+    const button = event.target.closest("[data-filter]");
+    if (!button) return;
+
+    filter = button.dataset.filter;
+    document.querySelectorAll(".chip").forEach(chip => {
+      chip.classList.toggle("active", chip === button);
+    });
+    render();
+  });
+
+  $("favoritePlaying").addEventListener("click", async () => {
+    if (!currentVideo) return;
+
+    currentVideo.favorite = !currentVideo.favorite;
+    try {
+      await putOne(currentVideo);
+      $("favoritePlaying").textContent =
+        currentVideo.favorite ? "★ Favorited" : "☆ Favorite";
+      await refresh();
+    } catch (error) {
+      console.error(error);
+      alert("Could not save favorite.");
+    }
+  });
+
+  $("copyTitle").addEventListener("click", async () => {
+    if (!currentVideo) return;
+    try {
+      await navigator.clipboard.writeText(currentVideo.name);
+      $("copyTitle").textContent = "Copied!";
+      setTimeout(() => $("copyTitle").textContent = "Copy title", 1500);
+    } catch (_) {
+      prompt("Copy this title:", currentVideo.name);
+    }
+  });
+
+  $("deletePlaying").addEventListener("click", async () => {
+    if (!currentVideo) return;
+    if (!confirm(`Delete "${currentVideo.name}" from your library?`)) return;
+
+    try {
+      const id = currentVideo.id;
+      closePlayer();
+      await deleteOne(id);
+      await refresh();
+    } catch (error) {
+      console.error(error);
+      alert("Could not delete this video.");
+    }
+  });
+
+  async function start() {
+    if (!("indexedDB" in window)) {
+      $("count").textContent = "Storage unavailable";
+      return;
+    }
+
+    try {
+      db = await openDB();
+      await refresh();
+    } catch (error) {
+      console.error(error);
+      $("count").textContent = "Storage error";
+      $("videoGrid").innerHTML =
+        '<div class="empty">Could not open your local video library. Try Safari or another supported browser.</div>';
+    }
+  }
+
+  start();
+})();
+</script>
+
+</body>
+</html>
